@@ -101,6 +101,7 @@ df = pd.DataFrame(columns)
 df = df[['total_shipped','developer','rank','name','platform','release_date','publisher','na_sales','eu_sales','jp_sales','other_sales','global_sales','game_genre','game_url','game_url_string']]
 df.to_csv("vgsales_full_third.csv",sep=",",encoding='utf-8')
 
+#Rewording platforms from vgchartz wording to metacritic wording for use in url
 platform_rewording_dict = {'PS3': 'playstation-3',
 					   'X360': 'xbox-360',
 					   'PC': 'pc',
@@ -126,7 +127,7 @@ platform_rewording_dict = {'PS3': 'playstation-3',
 mask=df['global_sales']!='N/A'
 url_search=df[mask]
 
-#creating a list of metacritic urls to scrape for user score and further data 
+#creating a list of metacritic urls  using game url string and platform to scrape for user score and further data 
 meta_full_url_list=[]
 meta_url= None
 index=list(range(0,len(url_search)))
