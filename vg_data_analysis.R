@@ -14,7 +14,7 @@ meta_data$platform<-gsub('^https://www.metacritic.com/game/','',meta_data$meta_f
 meta_data$platform<-gsub('/.*$','',meta_data$platform)
 
 
-#extracting game url name to use in later join
+#extracting game url string to use in later join
 meta_data$game_url_string<-gsub('^https://www.metacritic.com/game/.*/','',meta_data$meta_full_url)
 
 
@@ -35,7 +35,7 @@ for (i in 1:length(vg_plat)){
 meta_data$meta_esrb<-gsub("K-A","E",meta_data$meta_esrb)
 
 
-#Remoing '/r' & '/n' from user score strings 
+#Removing '/r' & '/n' from user score strings 
 meta_data$meta_user_score<-gsub('\r','',meta_data$meta_user_score)
 meta_data$meta_user_score<-gsub('\n','',meta_data$meta_user_score)
 
@@ -73,11 +73,11 @@ colnames(full_data)<-c('game','platform','developer','release_date','publisher',
                        'other_sales','global_sales','genre','critic_score','user_score','esrb_rating','multiplayer','game_url_string')
 
 
-#parsing release dates into time format 
+#parsing release dates into proper format 
 full_data$release_date<-mdy(full_data$release_date)
 
 
-#Deleting rows with no sales data, if we have reviews and no sales data its logical that there must be an error 
+#Deleting rows with no sales data, if we have reviews and no sales data it must be an error
 full_data<-full_data[which(full_data$global_sales!=0),]
 full_data<-full_data[!is.na(full_data$global_sales),]
 
@@ -100,7 +100,7 @@ full_data_merged_plats$index<-NULL
 #Deleting duplicate rows
 full_data_merged_plats<-full_data_merged_plats[!duplicated(full_data_merged_plats$game),]
 
-#Turning into factors 
+#Turning categorical variables into factors 
 full_data_merged_plats$developer<-as.factor(full_data_merged_plats$developer)
 full_data_merged_plats$publisher<-as.factor(full_data_merged_plats$publisher)
 full_data_merged_plats$genre<-as.factor(full_data_merged_plats$genre)
