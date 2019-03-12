@@ -2,13 +2,12 @@ library(lubridate)
 library(tidyverse)
 library(scales)
 library(gridExtra)
+library(knitr)
 
-e<-exp(1)
-meta_data<-read_csv("E:\\DOWNLOADS\\meta_full_third.csv")
-vg_data<-read_csv("E:\\DOWNLOADS\\vgsales_full_third.csv")
-igdb_data<-read_csv("E:\\DOWNLOADS\\igdb_full_third.csv")
+meta_data<-read_csv("/Users/jorge/DATA_FILES/meta_data.csv")
+vg_data<-read_csv("/Users/jorge/DATA_FILES/vgsales_data.csv")
+igdb_data<-read_csv("/Users/jorge/DATA_FILES/igdb_data.csv")
 colnames(igdb_data)<-c('index','game_url_string','series')
-
 
 #rewording meta_platform to use in later join
 meta_data$platform<-gsub('^https://www.metacritic.com/game/','',meta_data$meta_full_url)
@@ -63,37 +62,6 @@ meta_data$meta_user_score<-as.numeric(meta_data$meta_user_score)
 vg_data$release_date<-dmy(vg_data$release_date)
 
 
-#Sales by platform 
-by_platform<-vg_data%>%group_by(platform)%>%summarise(sum_by_platform=sum(global_sales,na.rm=TRUE))
-by_platform<-by_platform%>%arrange(desc(sum_by_platform))
-by_platform<-by_platform[1:15,]
-
-
-#Bar_graph sales per platform top 15
-ggplot(by_platform,aes(x=reorder(platform, -sum_by_platform),y=sum_by_platform))+geom_bar(stat='identity')+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+xlab('Top 15 platforms')+ylab('Total Sales')+scale_y_continuous(labels=comma)
-
-
-
-#Current gen
-cr_platform<-vg_data%>%filter(platform%in%c('playstation-4','xbox-one','switch') )%>%group_by(platform)%>%summarise(sum_by_platform=sum(global_sales,na.rm=TRUE))
-cr_platform<-cr_platform%>%mutate(total_sum=sum(sum_by_platform),value=(sum_by_platform/total_sum))
-
-
-#Graphing current gen percent of sales
-ggplot(cr_platform,aes(x='',y=value,fill=platform))+geom_bar(width = 1,stat='identity')+
-  coord_polar("y", start=0)+theme(axis.text.x=element_blank()) +
-  geom_text(aes(label = percent((value))), position = position_stack(vjust = 0.5))
-
-
-#by genre graph 
-by_genre<-vg_data%>%group_by(game_genre)%>%summarise(genre_sales=sum(global_sales,na.rm=TRUE))
-
-ggplot(by_genre,aes(x=game_genre,y=genre_sales,fill=game_genre))+geom_bar(stat='identity')+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  scale_y_continuous(labels = comma,expand = expand_scale(mult = c(0, .1)))
-
-
 #joining both data sets
 full_data<-left_join(meta_data,vg_data,by=c('game_url_string','platform'))
 
@@ -144,65 +112,4 @@ full_data_merged_plats$series<-as.factor(full_data_merged_plats$series)
 #Deleting Number_platform outlier (17 when no other more than 10)
 full_data_merged_plats<-full_data_merged_plats[-(which(full_data_merged_plats$number_platforms>10)),]
 
-#Distribution of Data
-ggplot(full_data_merged_plats,aes(x=total_sales))+geom_histogram(aes(y=..density..),bins = 20)+scale_x_continuous(labels=comma)
-
-
-#Taking log of sales 
-full_data_merged_plats$log_total_sales<-log(full_data_merged_plats$total_sales)
-
-
-#Distribution of log(total_sales)
-ggplot(full_data_merged_plats,aes(x=log_total_sales))+geom_histogram(aes(y=..density..),bins =20)
-
-
-# SINGLE LINEAR REGRESSION GRAPH ON LOG DATA
-critic_plot<-ggplot(full_data_merged_plats,aes(x=avg_critic_score,y=log_total_sales))+geom_point()+ylab('Total Sales Log(Millions)')+xlab('Average Critic Score')+
-  theme(plot.title = element_text(hjust = 0.5))+
-  geom_smooth(method='lm',se=FALSE)
-
-user_plot<-ggplot(full_data_merged_plats,aes(x=avg_user_score,y=log_total_sales))+geom_point()+ylab('Total Sales Log(Millions)')+
-  xlab('Average User Score')+
-  theme(plot.title = element_text(hjust = 0.5))+  geom_smooth(method='lm',se=FALSE)
-
-grid.arrange(critic_plot,user_plot,nrow=1,top='Relationship Between Review Scores and Videogame Sales')
-
-
-#SINGLE LINEAR REGRESSION ON NUMBER PLATFORMS
-ggplot(full_data_merged_plats,aes(x=number_platforms,y=log_total_sales))+geom_point()+ylab('Total Sales Log(Millions)')+xlab('Number of Platforms Game Available')+
-  theme(plot.title = element_text(hjust = 0.5))+
-  geom_smooth(method='lm',se=FALSE)
-
-
-#MULTIPLE LINEAR REGRESSION
-sales_model<-lm(log_total_sales ~ avg_critic_score+release_date+number_platforms+factor(developer)+factor(esrb_rating)+factor(publisher)+factor(multiplayer)+factor(genre)+factor(series),full_data_merged_plats)
-
-summary(sales_model)
-
-
-#TESTING 
-sales_model_test<-lm(log_total_sales ~ avg_critic_score+release_date+number_platforms+factor(esrb_rating)+factor(multiplayer)+factor(genre)+factor(series),full_data_merged_plats)
-
-summary(sales_model_test)
-
-
-#SINGLE LINEAR REGRESSION ON Average critic/user score by genre
-ggplot(full_data_merged_plats,aes(x=avg_user_score,y=log_total_sales))+geom_point()+ylab('Total Sales Log(Millions)')+xlab('Average critic score')+
-  theme(plot.title = element_text(hjust = 0.5))+
-  geom_smooth(method='lm',se=FALSE)+facet_wrap(~genre)
-
-ggplot(full_data_merged_plats,aes(x=avg_critic_score,y=log_total_sales))+geom_point()+ylab('Total Sales Log(Millions)')+xlab('Average user score')+
-  theme(plot.title = element_text(hjust = 0.5))+
-  geom_smooth(method='lm',se=FALSE)+facet_wrap(~genre)
-
-#Box plot sales by genre 
-average_line<-mean(full_data_merged_plats$log_total_sales)
-
-ggplot(full_data_merged_plats,aes(x=as.factor(genre),y=log_total_sales))+geom_boxplot()+ylab('Total Sales Log(Millions)')+xlab('Genre')+
-  theme(plot.title = element_text(hjust = 0.5),axis.text.x=element_blank())+
-  geom_smooth(method='lm',se=FALSE)+facet_wrap(~genre)+
-  geom_hline(yintercept=average_line, linetype="dashed", color = "red")
-
-ggplot(full_data_merged_plats,aes(x=multiplayer,y=log_total_sales))+geom_boxplot()+ylab('Total Sales Log(Millions)')+xlab('Genre')+
-  theme(plot.title = element_text(hjust = 0.5),axis.text.x=element_blank())+
-  geom_smooth(method='lm',se=FALSE)
+full_data_clean<-full_data_merged_plats[,c('game','total_sales','release_date','genre','avg_critic_score','avg_user_score','esrb_rating','multiplayer','number_platforms','series')]
