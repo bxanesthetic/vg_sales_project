@@ -82,7 +82,7 @@ full_data<-full_data[which(full_data$global_sales!=0),]
 full_data<-full_data[!is.na(full_data$global_sales),]
 
 
-#Merging games across different platforms 
+#Merging game data from different platforms 
 full_data_merged_plats<-full_data%>%group_by(game)%>%mutate(total_sales=sum(global_sales),avg_user_score=mean(user_score),avg_critic_score=mean(critic_score))
 full_data_merged_plats$multiplat<-1
 full_data_merged_plats<-full_data_merged_plats%>%group_by(game)%>%mutate(number_platforms=sum(multiplat))
